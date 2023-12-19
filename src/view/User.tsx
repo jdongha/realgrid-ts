@@ -1,18 +1,24 @@
-import { columns, fields } from "../grid/defination/userList.ds";
-import { useCallback, useEffect, useRef } from "react";
-import { useInfiniteGetUserList } from "../api/user/useInfiniteGetUserList";
+import { UserRow, columns, fields } from "../grid/defination/userList.ds";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useDataProvider, useGridView } from "../grid/hook/useRealGrid";
-import { addRow } from "../grid/util/realGridRowUtil";
-import { Result } from "../api/user/userListTypes";
+import { Result, UserListResponse } from "../api/user/userListTypes";
+import { fetchGetUserList } from "../api/user/useGetUserList";
+import { addManyRows } from "../grid/util/realGridRowUtil";
+
+const init_params = { page: 1, results: 20 };
 
 export default function User() {
   const realgridElement = useRef<HTMLDivElement>(null);
-  const { data, hasNextPage, fetchNextPage } = useInfiniteGetUserList({
-    results: 20,
-  });
+  const [searchParams, setSearchParams] = useState(init_params);
+  const [initPageRows, setInitPageRows] = useState<UserRow[]>([]);
 
-  // Convert org to grid row values
-  const mappedRow = useCallback((org: Result[] | undefined) => {
+  // Fn. Convert org to grid row values
+  const mappedRow = useCallback((org: Result[]) => {
     return (
       org?.map((result) => {
         if (!result) return {};
@@ -26,54 +32,61 @@ export default function User() {
       }) || []
     );
   }, []);
-  const isEmptyData = !data?.pages || data?.pages.length === 0;
-  const initPageOriginResult = isEmptyData ? [] : data.pages[0]?.result;
-  const initPageRows = mappedRow(initPageOriginResult);
+
+  // Request grid initial data
+  useEffect(() => {
+    fetchGetUserList(init_params).then((data: UserListResponse) => {
+      const rows = mappedRow(data?.results || []);
+      setInitPageRows(rows);
+    });
+  }, []);
 
   // Realgrid - LocalDataProvider
-  const dp = useDataProvider({
+  const provider = useDataProvider({
     undoable: true,
     dataFields: fields,
-    rows: initPageRows,
+    initRows: initPageRows,
   });
 
   // Realgrid - GridView
-  const gv = useGridView({
+  const grid = useGridView({
     gridContainer: realgridElement.current!,
     columns: columns,
-    dataProvider: dp.current,
+    dataProvider: provider,
   });
 
   // 그리드 무한 스크롤 페이징 - 이벤트 설정
   useEffect(() => {
-    const grid = gv.current;
     if (!grid) return;
 
     grid.onScrollToBottom = () => {
-      if (!hasNextPage) return;
+      // TODO:: if (!hasNextPage) return;
+      
       // fetch 전 행 편집 수정 내역을 저장.
       grid.commit();
-      // Request next page
-      fetchNextPage();
+
+      setSearchParams((curr) => {
+        return {
+          ...curr,
+          page: searchParams.page + 1,
+        };
+      });
     };
-  }, [fetchNextPage, gv, hasNextPage]);
+  }, [grid, searchParams.page]);
 
-  // 그리드 무한 스크롤 페이징 - Append rows
+  // Rquest next page
   useEffect(() => {
-    const dataProvider = dp.current;
-    const isAppendPage = !!data && !!data.pages && data.pages.length > 1;
+    if (!grid || !provider) return;
 
-    if (!dataProvider || !isAppendPage) return;
-
-    const pageIdx = data!.pages.length - 1;
-    const appendOrg = data!.pages[pageIdx]?.result;
-
-    addRow({
-      gridView: gv.current,
-      dataProvider: dataProvider,
-      row: mappedRow(appendOrg),
+    fetchGetUserList(searchParams).then((data: UserListResponse) => {
+      const rows = mappedRow(data?.results || []);
+      addManyRows({
+        gridView: grid,
+        dataProvider: provider,
+        rows: rows,
+      });      
     });
-  }, [data?.pages]);
+  }, [searchParams])
 
   return (
     <>
@@ -85,3 +98,4 @@ export default function User() {
     </>
   );
 }
+

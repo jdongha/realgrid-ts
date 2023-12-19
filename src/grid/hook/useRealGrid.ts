@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   ConfigObject,
   DataFieldInput,
@@ -15,7 +15,7 @@ export interface RealGridViewConstructorProps {
 
 export interface RealGridDataProviderConstructorProps {
   dataFields: DataFieldInput[];
-  rows: DataValues[];
+  initRows: DataValues[];
   undoable?: boolean;
 }
 
@@ -27,66 +27,74 @@ const useGridView = ({
   columns,
   dataProvider: dp,
 }: RealGridViewConstructorProps) => {
-  const gv = useRef<GridView>();
+  const [gv, setGv] = useState<GridView>();
 
+  // Create GridView
   useEffect(() => {
     if (!gridContainer) return;
 
-    gv.current = new GridView(gridContainer!);
-    const gvVal = gv.current;
+    setGv(new GridView(gridContainer));
     console.debug("Create GridView");
 
     return () => {
-      gvVal.destroy();
+      gv?.destroy();
       console.debug("Destroy GridView.");
     };
-  }, [columns, dp, gridContainer]);
+  }, [gridContainer]);
 
+  // Init set columns
   useEffect(() => {
-    const gvVal = gv.current;
+    if (!gv) return;
 
-    if (!gvVal || !dp) return;
+    gv.setColumns(columns);
+    console.debug("Set colums");
+  }, [columns, gv]);
 
-    gvVal.setDataSource(dp);
-    gvVal.setColumns(columns);
-    console.debug("Set colums/dataProvider");
-  }, [columns, dp]);
+  // Init set dataProvider
+  useEffect(() => {
+    if (!gv || !dp) return;
+
+    gv.setDataSource(dp);
+    console.debug("Set dataProvider");
+  }, [columns, dp, gv]);
 
   return gv;
 };
 
 const useDataProvider = ({
   dataFields,
-  rows,
-  undoable = false
+  initRows,
+  undoable = false,
 }: RealGridDataProviderConstructorProps) => {
-  const dp = useRef<LocalDataProvider>();
+  const [dp, setDp] = useState<LocalDataProvider>();
 
   useEffect(() => {
-    dp.current = new LocalDataProvider(undoable);
-    const dpVal = dp.current;
+    setDp(new LocalDataProvider(undoable))
     console.debug("Create LocalDataProvider");
 
     return () => {
-      dpVal.clearRows();
-      dpVal.destroy();
+      dp?.clearRows();
+      dp?.destroy();
       console.debug("destroy LocalDataProvider");
     };
   }, [undoable]);
 
   useEffect(() => {
-    const dpVal = dp.current;
-    if (!dpVal) return;
+    if (!dp) return;
 
-    dpVal.setFields(dataFields);
+    dp.setFields(dataFields);
     console.debug("Set fields");
+  }, [dataFields, dp]);
 
-    const hasData = rows && rows.length > 0;
-    dpVal.setRows(rows);
+  useEffect(() => {
+    if (!dp) return;
+
+    dp.setRows(initRows);
+    const hasData = initRows && initRows.length > 0;
     console.debug(
-      hasData ? `Set rows::: ${rows}` : `Set rows: Empty Data Array`
+      hasData ? `Set rows::: ${initRows}` : `Set rows: Empty Data Array`
     );
-  }, [dataFields, rows]);
+  }, [dp, initRows]);
 
   return dp;
 };

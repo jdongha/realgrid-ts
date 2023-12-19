@@ -25,8 +25,7 @@ const fetchGetUserList = async (params: SeachParams) => {
         .then((res) => {
           return res.data;
         });
-      // handle success
-      console.log(response);
+
       return response;
     } catch (error) {
       // handle error

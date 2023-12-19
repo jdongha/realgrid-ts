@@ -9,7 +9,12 @@ interface InsertRowProps extends CoreObjectProps {
   row: DataValues;
 }
 
+interface InsertManyRowProps extends CoreObjectProps {
+  rows: DataValues[];
+}
+
 interface AddRowProps extends InsertRowProps {}
+interface AddManyRowProps extends InsertManyRowProps {}
 
 function isEmptyGridCore({ gridView, dataProvider }: CoreObjectProps) {
   const isEmpty = !gridView || !dataProvider;
@@ -60,9 +65,22 @@ function addRow({ gridView, dataProvider, row: rowValue }: AddRowProps) {
   //setTimeout(function(){gridView.showEditor();}, 10); //바로 편집기를 표시하고 싶을때
 }
 
+function addManyRows({ gridView, dataProvider, rows: rowsValue }: AddManyRowProps) {
+  const isEmptyRow = !rowsValue || rowsValue.length === 0;
+  if (isEmptyGridCore({ gridView, dataProvider }) && isEmptyRow) {
+    isEmptyRow && console.error(`Fail addRow :: Row is undefined`);
+    return;
+  }
+
+  dataProvider!.addRows(rowsValue);
+  // gridView!.setCurrent({ dataRow: dataRow }); //추가된 행으로 포커스 이동
+  //setTimeout(function(){gridView.showEditor();}, 10); //바로 편집기를 표시하고 싶을때
+}
+
 export {
     addRow,
     addEmptyRow,
     insertEmptyRow,
-    insertRow
+    insertRow,
+    addManyRows
 }
