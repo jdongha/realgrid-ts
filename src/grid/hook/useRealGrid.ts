@@ -1,23 +1,47 @@
 import { useEffect, useState } from "react";
 import {
+  CellIndex,
   ConfigObject,
   DataFieldInput,
   DataValues,
   GridView,
   LocalDataProvider,
+  RowValues,
+  SelectionStyle,
+  ViewOptions,
 } from "realgrid";
 
 export interface RealGridViewConstructorProps {
   gridContainer: HTMLDivElement | null | undefined;
   columns: (string | ConfigObject)[];
+  options?: ViewOptions;
+  onCurrentChanged?: (newCellIndex: CellIndex) => void;
+  selectionmode?: SelectionStyle;
   dataProvider?: LocalDataProvider;
 }
 
 export interface RealGridDataProviderConstructorProps {
   dataFields: DataFieldInput[];
-  initRows: DataValues[];
+  initRows?: DataValues[];
   undoable?: boolean;
+  onCellBeforeEdit?: (rowValues: RowValues) => boolean;
+  onCellAfterEdit?: (rowValues: RowValues) => boolean;
 }
+
+const INIT_GRID_OPT: ViewOptions = {
+  checkBar: { visible: false },
+  edit: {
+    insertable: true,
+    appendable: true,
+    updatable: true,
+    editable: true,
+  },
+  rowIndicator: {
+    zeroBase: true,
+    visible: true,
+  },
+  stateBar: { visible: true },
+};
 
 /**
  *
@@ -25,6 +49,9 @@ export interface RealGridDataProviderConstructorProps {
 const useGridView = ({
   gridContainer,
   columns,
+  options,
+  onCurrentChanged,
+  selectionmode,
   dataProvider: dp,
 }: RealGridViewConstructorProps) => {
   const [gv, setGv] = useState<GridView>();
@@ -50,6 +77,34 @@ const useGridView = ({
     console.debug("Set colums");
   }, [columns, gv]);
 
+  // Init set options
+  useEffect(() => {
+    if (!gv) return;
+    gv.setOptions({ ...INIT_GRID_OPT, ...options });
+    console.debug("Set Options");
+  }, [options, gv]);
+
+  // Init set onCurrentChanged
+  useEffect(() => {
+    if (!gv) return;
+
+    gv.onCurrentChanged = (grid, newCellIndex) => {
+      if (onCurrentChanged) {
+        console.debug("Set onCurrentChanged");
+        onCurrentChanged(newCellIndex);
+      }
+    };
+  }, [onCurrentChanged, gv]);
+
+  // Init set selectionmode
+  useEffect(() => {
+    if (!gv) return;
+
+    console.debug("Set selectionmode");
+    gv.setSelection({style: selectionmode})
+  }, [selectionmode, gv]);
+
+
   // Init set dataProvider
   useEffect(() => {
     if (!gv || !dp) return;
@@ -58,6 +113,7 @@ const useGridView = ({
     console.debug("Set dataProvider");
   }, [columns, dp, gv]);
 
+
   return gv;
 };
 
@@ -65,17 +121,18 @@ const useDataProvider = ({
   dataFields,
   initRows,
   undoable = false,
+  onCellBeforeEdit,
+  onCellAfterEdit
 }: RealGridDataProviderConstructorProps) => {
   const [dp, setDp] = useState<LocalDataProvider>();
 
   useEffect(() => {
-    setDp(new LocalDataProvider(undoable))
+    setDp(new LocalDataProvider(undoable));
     console.debug("Create LocalDataProvider");
 
     return () => {
       dp?.clearRows();
       dp?.destroy();
-      console.debug("destroy LocalDataProvider");
     };
   }, [undoable]);
 
@@ -87,7 +144,7 @@ const useDataProvider = ({
   }, [dataFields, dp]);
 
   useEffect(() => {
-    if (!dp) return;
+    if (!dp || !initRows) return;
 
     dp.setRows(initRows);
     const hasData = initRows && initRows.length > 0;
@@ -95,6 +152,33 @@ const useDataProvider = ({
       hasData ? `Set rows::: ${initRows}` : `Set rows: Empty Data Array`
     );
   }, [dp, initRows]);
+
+  useEffect(() => {
+    if (!dp) return;
+
+    dp.onRowUpdating = (provider, rowNum) => {
+      if (onCellBeforeEdit) {
+        console.debug("set onRowUpdating");
+
+        const values = provider.getRows()[rowNum];
+        return onCellBeforeEdit(values);
+      }
+      return true;
+    };
+  }, [dp, onCellBeforeEdit]);
+
+  useEffect(() => {
+    if (!dp) return;
+
+    dp.onRowUpdated = (provider, rowNum) => {
+      if (onCellAfterEdit) {
+        console.debug("set onRowUpdated");
+
+        const values = provider.getRows()[rowNum];
+        onCellAfterEdit(values);
+      }
+    };
+  }, [dp, onCellAfterEdit]);
 
   return dp;
 };

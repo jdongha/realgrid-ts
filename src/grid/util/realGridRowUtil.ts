@@ -1,22 +1,22 @@
 import { DataValues, GridView, LocalDataProvider } from "realgrid";
 
-interface CoreObjectProps {
+export interface RealGridCoreProps {
   gridView?: GridView;
   dataProvider?: LocalDataProvider;
 }
 
-interface InsertRowProps extends CoreObjectProps {
+export interface InsertRowProps extends RealGridCoreProps {
   row: DataValues;
 }
 
-interface InsertManyRowProps extends CoreObjectProps {
+export interface InsertRowsProps extends RealGridCoreProps {
   rows: DataValues[];
 }
 
-interface AddRowProps extends InsertRowProps {}
-interface AddManyRowProps extends InsertManyRowProps {}
+export interface AddRowProps extends InsertRowProps {}
+export interface AddRowsProps extends InsertRowsProps {}
 
-function isEmptyGridCore({ gridView, dataProvider }: CoreObjectProps) {
+function isEmptyGridCore({ gridView, dataProvider }: RealGridCoreProps) {
   const isEmpty = !gridView || !dataProvider;
 
   isEmpty &&
@@ -25,7 +25,7 @@ function isEmptyGridCore({ gridView, dataProvider }: CoreObjectProps) {
   return isEmpty;
 }
 
-function insertEmptyRow({ gridView, dataProvider }: CoreObjectProps) {
+function insertEmptyRow({ gridView, dataProvider }: RealGridCoreProps) {
   if (isEmptyGridCore({ gridView, dataProvider })) return;
 
   const row = gridView!.getCurrent().dataRow || 0;
@@ -45,7 +45,7 @@ function insertRow({ gridView, dataProvider, row: rowValue }: InsertRowProps) {
   //gridView.showEditor(); //바로 편집기를 표시하고 싶을때
 }
 
-function addEmptyRow({ gridView, dataProvider }: CoreObjectProps) {
+function addEmptyRow({ gridView, dataProvider }: RealGridCoreProps) {
   if (isEmptyGridCore({ gridView, dataProvider })) return;
 
   const dataRow = dataProvider!.addRow({});
@@ -65,7 +65,11 @@ function addRow({ gridView, dataProvider, row: rowValue }: AddRowProps) {
   //setTimeout(function(){gridView.showEditor();}, 10); //바로 편집기를 표시하고 싶을때
 }
 
-function addManyRows({ gridView, dataProvider, rows: rowsValue }: AddManyRowProps) {
+function addRows({
+  gridView,
+  dataProvider,
+  rows: rowsValue,
+}: AddRowsProps) {
   const isEmptyRow = !rowsValue || rowsValue.length === 0;
   if (isEmptyGridCore({ gridView, dataProvider }) && isEmptyRow) {
     isEmptyRow && console.error(`Fail addRow :: Row is undefined`);
@@ -77,10 +81,4 @@ function addManyRows({ gridView, dataProvider, rows: rowsValue }: AddManyRowProp
   //setTimeout(function(){gridView.showEditor();}, 10); //바로 편집기를 표시하고 싶을때
 }
 
-export {
-    addRow,
-    addEmptyRow,
-    insertEmptyRow,
-    insertRow,
-    addManyRows
-}
+export { addRow, addEmptyRow, insertEmptyRow, insertRow, addRows };

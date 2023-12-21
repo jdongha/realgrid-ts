@@ -1,21 +1,15 @@
 import { UserRow, columns, fields } from "../grid/defination/userList.ds";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDataProvider, useGridView } from "../grid/hook/useRealGrid";
 import { Result, UserListResponse } from "../api/user/userListTypes";
 import { fetchGetUserList } from "../api/user/useGetUserList";
-import { addManyRows } from "../grid/util/realGridRowUtil";
+import { addRows } from "../grid/util/realGridRowUtil";
 
 const init_params = { page: 1, results: 20 };
 
 export default function User() {
   const realgridElement = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useState(init_params);
-  const [initPageRows, setInitPageRows] = useState<UserRow[]>([]);
 
   // Fn. Convert org to grid row values
   const mappedRow = useCallback((org: Result[]) => {
@@ -33,19 +27,10 @@ export default function User() {
     );
   }, []);
 
-  // Request grid initial data
-  useEffect(() => {
-    fetchGetUserList(init_params).then((data: UserListResponse) => {
-      const rows = mappedRow(data?.results || []);
-      setInitPageRows(rows);
-    });
-  }, []);
-
   // Realgrid - LocalDataProvider
   const provider = useDataProvider({
     undoable: true,
     dataFields: fields,
-    initRows: initPageRows,
   });
 
   // Realgrid - GridView
@@ -61,7 +46,7 @@ export default function User() {
 
     grid.onScrollToBottom = () => {
       // TODO:: if (!hasNextPage) return;
-      
+
       // fetch 전 행 편집 수정 내역을 저장.
       grid.commit();
 
@@ -74,19 +59,24 @@ export default function User() {
     };
   }, [grid, searchParams.page]);
 
-  // Rquest next page
+  // Rquest init page, next page
   useEffect(() => {
     if (!grid || !provider) return;
 
     fetchGetUserList(searchParams).then((data: UserListResponse) => {
+      const isEmpty = provider.getRowCount() === 0;
       const rows = mappedRow(data?.results || []);
-      addManyRows({
-        gridView: grid,
-        dataProvider: provider,
-        rows: rows,
-      });      
+      isEmpty
+        // init set
+        ? provider.setRows(rows)
+        // add rows
+        : addRows({
+            gridView: grid,
+            dataProvider: provider,
+            rows: rows,
+          });
     });
-  }, [searchParams])
+  }, [grid, provider, searchParams]);
 
   return (
     <>
@@ -98,4 +88,3 @@ export default function User() {
     </>
   );
 }
-
