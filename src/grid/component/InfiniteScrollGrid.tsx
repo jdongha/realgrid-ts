@@ -1,15 +1,12 @@
-import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef } from "react";
 import {
   CellIndex,
   ConfigObject,
-  DataFieldInput,
   DataValues,
   LocalDataProvider,
-  RowValues,
   SelectionStyle,
 } from "realgrid";
-import { useDataProvider, useGridView } from "../hook/useRealGrid";
-import { addRows } from "../util/realGridRowUtil";
+import { useGridView } from "../hook/useRealGrid";
 
 export interface GridProps {
   columns: (ConfigObject | string)[];
@@ -44,8 +41,6 @@ export default function InfiniteScrollGrid({
     if (!gridView || !dataProvider) return;
 
     gridView.onScrollToBottom = () => {
-      // TODO:: if (!hasNextPage) return;
-
       // fetch 전 행 편집 수정 내역을 저장.
       gridView.commit();
 

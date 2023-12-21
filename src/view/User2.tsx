@@ -1,5 +1,5 @@
 import { columns } from "../grid/defination/userList.ds";
-import InfiniteScrollGrid from "../grid/component/RealGrid";
+import InfiniteScrollGrid from "../grid/component/InfiniteScrollGrid";
 import { useUserDataContext } from "../grid/hook/useUserDataContext";
 
 export default function User2() {

@@ -42,7 +42,7 @@ export const UserDataContextProvider: React.FC<{
     undoable: true,
   });
 
-  // Fn. Convert org to grid row values
+  // Fn. Convert org to dataset field values
   const mappedRow = useCallback((org: Result[]) => {
     return (
       org?.map((result) => {
@@ -67,6 +67,7 @@ export const UserDataContextProvider: React.FC<{
     dataProvider?.setRows(mappedRow(data));
   }, [dataProvider, mappedRow, usersResponse]);
 
+  // fetch & add
   const fetchNext = () => {
     if (!hasNextPage) return;
 
@@ -77,6 +78,7 @@ export const UserDataContextProvider: React.FC<{
       dataProvider?.addRows(mappedRow(data));
     })
   };
+
   return (
     <UserDataContext.Provider value={{ dataProvider }}>
       <UserDataDispatchContext.Provider value={{ fetchNext }}>
