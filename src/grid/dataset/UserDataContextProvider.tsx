@@ -31,7 +31,7 @@ const init_params = { page: 1, results: 20 };
 export const UserDataContextProvider: React.FC<{
   children?: React.ReactNode;
 }> = ({ children }) => {
-  const [searchParams, setSearchParams] = useState(init_params);
+  // 무한스크롤
   const {
     data: usersResponse,
     hasNextPage,
